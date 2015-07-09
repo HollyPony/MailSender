@@ -43,7 +43,7 @@ public class SendMailService {
     private final static String MAIL_ADRESSE_HOST_DEFAULT = "localhost";
 
     // Default properties consts
-    private final static String mailPath = "./Mails/";
+    private final static String MAIL_PATH_DEFAULT = "./Mails/";
 
     // Properties file path
     private final static String propertiesPath = "mail.properties";
@@ -66,8 +66,10 @@ public class SendMailService {
         LOG.info("Read properties on ".concat(propertiesPath));
         final Properties properties = loadProperties();
 
+        final String mailPath = properties.getProperty("MAIL_PATH", MAIL_PATH_DEFAULT);
+
         LOG.info("Read files on \"".concat(mailPath).concat("\" !"));
-        final Map<File, Message> mails = loadMail(mailPath);
+        final Map<File, Message> mails = loadMails(mailPath);
 
 
         final Contexte ctx = new Contexte();
@@ -127,7 +129,7 @@ public class SendMailService {
         InputStream mailStream = null;
 
         try {
-            LOG.info("Sending mail : "+ mailEntry.getKey().getCanonicalPath());
+            LOG.info("Sending mail : " + mailEntry.getKey().getCanonicalPath());
 
             mailStream = new FileInputStream(mailEntry.getKey());
 
@@ -167,7 +169,7 @@ public class SendMailService {
         }
     }
 
-    private Map<File,Message> loadMail(String mailPath) {
+    private Map<File,Message> loadMails(String mailPath) {
         final Map<File, Message> result = new HashMap<File, Message>();
         final File mailDirectory = new File(mailPath);
         if (mailDirectory.isDirectory()) {
@@ -200,7 +202,7 @@ public class SendMailService {
         try {
             propertiesFile = new FileInputStream(propertiesPath);
 
-            LOG.info("Load properties");
+            LOG.info("Load properties on : " + propertiesPath);
             properties.load(propertiesFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();

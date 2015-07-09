@@ -1,5 +1,6 @@
 # Split mails with a ,
 MAIL_TO=address@host.com
+MAIL_PATH=Mails/
 
 #
 MAIL_SMTP_PORT=25
