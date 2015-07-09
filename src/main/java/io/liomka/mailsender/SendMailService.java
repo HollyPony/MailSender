@@ -15,14 +15,12 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.List;
 
 /**
  * Created by aagombart on 03/03/2015.
@@ -40,7 +38,7 @@ public class SendMailService {
         final String mailPath = usr.getMailPath();
 
         LOG.info("Read files on \"".concat(mailPath).concat("\" !"));
-        final Map<File, Message> mails = loadMails(mailPath);
+        final List<File> mails = loadMails(mailPath);
 
         Transport transport = null;
         try {
@@ -59,9 +57,9 @@ public class SendMailService {
             transport.connect();
             LOG.info("Connected");
 
-            LOG.info("Sending " + mails.values().size() + " mails");
-            for (final Map.Entry<File, Message> mailEntry : mails.entrySet()) {
-                sendMail(usr, mailEntry);
+            LOG.info("Sending " + mails.size() + " mails");
+            for (final File mailFile : mails) {
+                sendMail(usr, mailFile);
             }
         } catch (NoSuchProviderException e) {
             e.printStackTrace();
@@ -80,26 +78,24 @@ public class SendMailService {
         }
     }
 
-    private void sendMail(final UserProperties usr, final Map.Entry<File, Message> mailEntry) {
+    private void sendMail(final UserProperties usr, final File mailFile) {
         InputStream mailStream = null;
 
         try {
-            LOG.info("Sending mail : " + mailEntry.getKey().getCanonicalPath());
+            LOG.info("Sending mail : " + mailFile.getCanonicalPath());
 
-            mailStream = new FileInputStream(mailEntry.getKey());
+            mailStream = new FileInputStream(mailFile);
 
-            final String fromEml = (mailEntry.getValue() != null
-                    && mailEntry.getValue().getFrom() != null
-                    && mailEntry.getValue().getFrom().length > 0)
-                    ? mailEntry.getValue().getFrom()[0].toString()
-                    : StringUtils.EMPTY;
+            final MimeMessage message = new MimeMessage(usr.getSession(), mailStream);
+
+            final String fromEml = (message.getFrom() != null && message.getFrom().length > 0)
+                    ? message.getFrom()[0].toString() : StringUtils.EMPTY;
 
             final String fromDefault = System.getProperty("user.name").concat("@")
                     .concat(InetAddress.getLocalHost().getHostName());
 
             final String from = StringUtils.defaultIfEmpty(usr.getFrom(), StringUtils.defaultIfEmpty(fromEml, fromDefault));
 
-            final MimeMessage message = new MimeMessage(usr.getSession(), mailStream);
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(usr.getTo().trim()));
             message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(usr.getCc().trim()));
             message.setFrom(new InternetAddress(from.trim()));
@@ -126,27 +122,14 @@ public class SendMailService {
      * @param mailPath
      * @return
      */
-    private Map<File,Message> loadMails(String mailPath) {
-        final Map<File, Message> result = new HashMap<File, Message>();
+    private List<File> loadMails(String mailPath) {
+        final List<File> result = new ArrayList<File>();
         final File mailDirectory = new File(mailPath);
         if (mailDirectory.isDirectory()) {
             final Collection<File> emlFiles = FileUtils.listFiles(mailDirectory, new String[]{"eml"}, true);
 
-            final Properties props = System.getProperties();
-            props.put("mail.host", "smtp.dummydomain.com");
-            props.put("mail.transport.protocol", "smtp");
-
-            final javax.mail.Session mailSession = javax.mail.Session.getDefaultInstance(props, null);
             for (final File emlFile : emlFiles) {
-                try {
-                    InputStream source = new FileInputStream(emlFile);
-                    MimeMessage message = new MimeMessage(mailSession, source);
-                    result.put(emlFile, message);
-                } catch (MessagingException e) {
-                    e.printStackTrace();
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
+                result.add(emlFile);
             }
         }
 
