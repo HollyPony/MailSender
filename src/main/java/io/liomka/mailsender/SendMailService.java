@@ -2,7 +2,6 @@ package io.liomka.mailsender;
 
 import io.liomka.mailsender.utils.UserProperties;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +18,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by aagombart on 03/03/2015.
@@ -31,14 +31,18 @@ public class SendMailService {
 
     private final static Logger LOG = LoggerFactory.getLogger(SendMailService.class);
 
+    private final static String EML_EXT = "eml";
+
+    // TODO Make a singleton
+    final UserProperties usr = new UserProperties();
+
     private void execute() {
-        final UserProperties usr = new UserProperties();
 
         usr.getDate();
         final String mailPath = usr.getMailPath();
 
         LOG.info("Read files on \"".concat(mailPath).concat("\" !"));
-        final List<File> mails = loadMails(mailPath);
+        final Map<String, List<File>> mails = loadMails(mailPath);
 
         Transport transport = null;
         try {
@@ -57,9 +61,11 @@ public class SendMailService {
             transport.connect();
             LOG.info("Connected");
 
-            LOG.info("Sending " + mails.size() + " mails");
-            for (final File mailFile : mails) {
-                sendMail(usr, mailFile);
+            for (final Map.Entry<String, List<File>> mailsEntry : mails.entrySet()) {
+                LOG.info("Sending " + mails.size() + " mails to <" + mailsEntry.getKey() + ">");
+                for(final File file : mailsEntry.getValue()) {
+                    sendMail(mailsEntry.getKey(), file);
+                }
             }
         } catch (NoSuchProviderException e) {
             e.printStackTrace();
@@ -78,7 +84,7 @@ public class SendMailService {
         }
     }
 
-    private void sendMail(final UserProperties usr, final File mailFile) {
+    private void sendMail(final String recipient, final File mailFile) {
         InputStream mailStream = null;
 
         try {
@@ -96,7 +102,7 @@ public class SendMailService {
 
             final String from = StringUtils.defaultIfEmpty(usr.getFrom(), StringUtils.defaultIfEmpty(fromEml, fromDefault));
 
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(usr.getTo().trim()));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient.trim()));
             message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(usr.getCc().trim()));
             message.setFrom(new InternetAddress(from.trim()));
             message.setSentDate(usr.getDate());
@@ -119,21 +125,40 @@ public class SendMailService {
 
     /**
      * Load all mails into HashMap Java compliant.
-     * @param mailPath
-     * @return
      */
-    private List<File> loadMails(String mailPath) {
-        final List<File> result = new ArrayList<File>();
+    private Map<String, List<File>> loadMails(String mailPath) {
+        final Map<String, List<File>> result = new HashMap<String, List<File>>();
         final File mailDirectory = new File(mailPath);
         if (mailDirectory.isDirectory()) {
-            final Collection<File> emlFiles = FileUtils.listFiles(mailDirectory, new String[]{"eml"}, true);
+            final List<File> rootList = new ArrayList<File>();
 
-            for (final File emlFile : emlFiles) {
-                result.add(emlFile);
+            for (final File file : mailDirectory.listFiles()) {
+                if (file.isDirectory()) {
+                    final List<File> folderContent = new ArrayList<File>();
+                    for (final File folderFile : file.listFiles()) {
+                        if (EML_EXT.equals(getFileExtension(folderFile.getName()))) {
+                            folderContent.add(folderFile);
+                        }
+                    }
+                    result.put(file.getName(), folderContent);
+                } else if (EML_EXT.equals(getFileExtension(file.getName()))) {
+                    rootList.add(file);
+                }
             }
+
+            final String recipient = usr.getTo();
+            if (!result.containsKey(recipient)) {
+                result.put(recipient, new ArrayList<File>());
+            }
+            result.get(usr.getTo()).addAll(rootList);
         }
 
         return result;
+    }
+
+    private static String getFileExtension(String fileName) {
+        return (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
+                ? fileName.substring(fileName.lastIndexOf(".") + 1) : null;
     }
 
     public static void main (String[] args) {
