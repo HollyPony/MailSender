@@ -1,6 +1,7 @@
 package io.liomka.mailsender;
 
 import io.liomka.mailsender.utils.UserProperties;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ public class SendMailService {
 
         Transport transport = null;
         try {
-            // Il faut au moins des smtp host et port
+            // At least a host and port smtp are required
             if (StringUtils.isEmpty(usr.getHost()))
                 throw new Exception("Cannot send mail, server address is missing");
 
@@ -98,14 +99,12 @@ public class SendMailService {
 
             final String from = StringUtils.defaultIfEmpty(usr.getFrom(), StringUtils.defaultIfEmpty(fromEml, fromDefault));
 
-            // Le Message
-            MimeMessage message = new MimeMessage(usr.getSession(), mailStream);
+            final MimeMessage message = new MimeMessage(usr.getSession(), mailStream);
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(usr.getTo().trim()));
             message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(usr.getCc().trim()));
             message.setFrom(new InternetAddress(from.trim()));
             message.setSentDate(usr.getDate());
 
-            // envoi du mail
             usr.getTransport().sendMessage(message, message.getRecipients(Message.RecipientType.TO));
             LOG.info("Mail sent");
         } catch (Exception e) {
