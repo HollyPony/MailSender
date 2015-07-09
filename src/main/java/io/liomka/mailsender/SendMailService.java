@@ -2,6 +2,8 @@ package io.liomka.mailsender;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -28,6 +30,8 @@ import java.util.Properties;
  * Main class of the mail sender
  */
 public class SendMailService {
+
+    private final static Logger LOG = LoggerFactory.getLogger(SendMailService.class);
 
     // Args const
     private final static String MAIL_TO = "MAIL_TO";
@@ -59,10 +63,10 @@ public class SendMailService {
 
     private void execute() {
 
-        System.out.println("Read properties on ".concat(propertiesPath));
+        LOG.info("Read properties on ".concat(propertiesPath));
         final Properties properties = loadProperties();
 
-        System.out.println("Read files on \"".concat(mailPath).concat("\" !"));
+        LOG.info("Read files on \"".concat(mailPath).concat("\" !"));
         final Map<File, Message> mails = loadMail(mailPath);
 
 
@@ -92,13 +96,13 @@ public class SendMailService {
 
             ctx.session = javax.mail.Session.getInstance(properties, null);
 
-            System.out.println("Get transport ...");
+            LOG.info("Get transport ...");
             ctx.transport = ctx.session.getTransport();
-            System.out.println("Connect on transport");
+            LOG.info("Connect on transport");
             ctx.transport.connect();
-            System.out.println("Connected");
+            LOG.info("Connected");
 
-            System.out.println("Sending " + mails.values().size() + " mails");
+            LOG.info("Sending " + mails.values().size() + " mails");
             for (final Map.Entry<File, Message> mailEntry : mails.entrySet()) {
                 sendMail(ctx, mailEntry);
             }
@@ -123,7 +127,7 @@ public class SendMailService {
         InputStream mailStream = null;
 
         try {
-            System.out.println("Sending mail : "+ mailEntry.getKey().getCanonicalPath());
+            LOG.info("Sending mail : "+ mailEntry.getKey().getCanonicalPath());
 
             mailStream = new FileInputStream(mailEntry.getKey());
 
@@ -148,9 +152,9 @@ public class SendMailService {
 
             // envoi du mail
             ctx.transport.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
-            System.out.println("Mail sent");
+            LOG.info("Mail sent");
         } catch (Exception e) {
-            System.out.println("fail");
+            LOG.info("fail");
             e.printStackTrace();
         } finally {
             if (mailStream != null) {
@@ -196,7 +200,7 @@ public class SendMailService {
         try {
             propertiesFile = new FileInputStream(propertiesPath);
 
-            System.out.println("Load properties");
+            LOG.info("Load properties");
             properties.load(propertiesFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
