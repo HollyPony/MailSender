@@ -18,6 +18,11 @@
             <artifactId>commons-lang</artifactId>
             <version>2.3</version>	<!-- Au lieu de 2.5 pour compat WAS7 -->
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.3</version>	<!-- Au lieu de 2.5 pour compat WAS7 -->
+        </dependency>
 
         <dependency>
             <groupId>javax.mail</groupId>

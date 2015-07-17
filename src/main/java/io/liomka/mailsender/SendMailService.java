@@ -2,6 +2,7 @@ package io.liomka.mailsender;
 
 import io.liomka.mailsender.utils.UserProperties;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,7 @@ public class SendMailService {
         final String mailPath = usr.getMailPath();
 
         LOG.info("Read files on \"".concat(mailPath).concat("\" !"));
-        final Map<String, List<File>> mails = loadMails(mailPath);
+        final Map<String, List<File>> mailsMap = loadMails(mailPath);
 
         Transport transport = null;
         try {
@@ -61,10 +62,14 @@ public class SendMailService {
             transport.connect();
             LOG.info("Connected");
 
-            for (final Map.Entry<String, List<File>> mailsEntry : mails.entrySet()) {
-                LOG.info("Sending " + mails.size() + " mails to <" + mailsEntry.getKey() + ">");
-                for(final File file : mailsEntry.getValue()) {
-                    sendMail(mailsEntry.getKey(), file);
+            for (final Map.Entry<String, List<File>> mailsEntry : mailsMap.entrySet()) {
+                final String address = mailsEntry.getKey();
+                final List<File> mails = mailsEntry.getValue();
+                if (mails != null && mails.size() > 0) {
+                    LOG.info("Sending " + mails.size() + " mails to <" + address + ">");
+                    for (final File file : mails) {
+                        sendMail(address, file);
+                    }
                 }
             }
         } catch (NoSuchProviderException e) {
@@ -88,7 +93,9 @@ public class SendMailService {
         InputStream mailStream = null;
 
         try {
-            LOG.info("Sending mail : " + mailFile.getCanonicalPath());
+            LOG.info("Sending mail");
+            LOG.info("\tPath: " + mailFile.getCanonicalPath());
+            LOG.info("\tSize: " + FileUtils.byteCountToDisplaySize(mailFile.length()));
 
             mailStream = new FileInputStream(mailFile);
 
