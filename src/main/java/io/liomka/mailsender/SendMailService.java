@@ -18,9 +18,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -32,8 +32,6 @@ public class SendMailService {
 
     private final static Logger LOG = LoggerFactory.getLogger(SendMailService.class);
 
-    private final static String EML_EXT = "eml";
-
     // TODO Make a singleton
     final UserProperties usr = new UserProperties();
 
@@ -43,7 +41,7 @@ public class SendMailService {
         final String mailPath = usr.getMailPath();
 
         LOG.info("Read files on \"".concat(mailPath).concat("\" !"));
-        final Map<String, List<File>> mailsMap = loadMails(mailPath);
+        final Map<String, Collection<File>> mailsMap = loadMails(mailPath);
 
         Transport transport = null;
         try {
@@ -62,9 +60,9 @@ public class SendMailService {
             transport.connect();
             LOG.info("Connected");
 
-            for (final Map.Entry<String, List<File>> mailsEntry : mailsMap.entrySet()) {
+            for (final Map.Entry<String, Collection<File>> mailsEntry : mailsMap.entrySet()) {
                 final String address = mailsEntry.getKey();
-                final List<File> mails = mailsEntry.getValue();
+                final Collection<File> mails = mailsEntry.getValue();
                 if (mails != null && mails.size() > 0) {
                     LOG.info("Sending " + mails.size() + " mails to <" + address + ">");
                     for (final File file : mails) {
@@ -133,39 +131,28 @@ public class SendMailService {
     /**
      * Load all mails into HashMap Java compliant.
      */
-    private Map<String, List<File>> loadMails(String mailPath) {
-        final Map<String, List<File>> result = new HashMap<String, List<File>>();
+    private Map<String, Collection<File>> loadMails(String mailPath) {
+        final Map<String, Collection<File>> result = new HashMap<String, Collection<File>>();
         final File mailDirectory = new File(mailPath);
         if (mailDirectory.isDirectory()) {
-            final List<File> rootList = new ArrayList<File>();
 
             for (final File file : mailDirectory.listFiles()) {
                 if (file.isDirectory()) {
-                    final List<File> folderContent = new ArrayList<File>();
-                    for (final File folderFile : file.listFiles()) {
-                        if (EML_EXT.equals(getFileExtension(folderFile.getName()))) {
-                            folderContent.add(folderFile);
-                        }
-                    }
+                    final Collection<File> folderContent = FileUtils.listFiles(file, new String[]{"eml"}, true);
                     result.put(file.getName(), folderContent);
-                } else if (EML_EXT.equals(getFileExtension(file.getName()))) {
-                    rootList.add(file);
                 }
             }
 
+            final Collection<File> rootList = FileUtils.listFiles(mailDirectory, new String[]{"eml"}, false);
+
             final String recipient = usr.getTo();
             if (!result.containsKey(recipient)) {
-                result.put(recipient, new ArrayList<File>());
+                result.put(recipient, new HashSet<File>());
             }
             result.get(usr.getTo()).addAll(rootList);
         }
 
         return result;
-    }
-
-    private static String getFileExtension(String fileName) {
-        return (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
-                ? fileName.substring(fileName.lastIndexOf(".") + 1) : null;
     }
 
     public static void main (String[] args) {
