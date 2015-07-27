@@ -1,5 +1,6 @@
 package io.liomka.mailsender.utils;
 
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.mail.NoSuchProviderException;
@@ -27,6 +28,7 @@ public class UserProperties {
     private final static String MAIL_SMTP_PORT = "MAIL_SMTP_PORT";
     private final static String MAIL_SMTP_PORT_DEFAULT = "25";
     private final static String MAIL_ADRESSE_HOST = "MAIL_ADRESSE_HOST";
+    private final static String UPDATE_MESSAGE_ID = "UPDATE_MESSAGE_ID";
     private final static String MAIL_ADRESSE_HOST_DEFAULT = "localhost";
     private final static String MAIL_PATH_DEFAULT = "./Mails/";
 
@@ -38,6 +40,7 @@ public class UserProperties {
     private String cc = null;
     private String port = null;
     private String host = null;
+    private Boolean updateMessageId = null;
 
     private Transport transport = null;
     private Session session = null;
@@ -121,6 +124,13 @@ public class UserProperties {
             from = properties.getProperty(MAIL_FROM, StringUtils.EMPTY);
         }
         return from;
+    }
+
+    public boolean isUpdateMessageId() {
+        if (updateMessageId == null) {
+            updateMessageId = BooleanUtils.toBoolean(properties.getProperty(UPDATE_MESSAGE_ID, "false"));
+        }
+        return BooleanUtils.isTrue(updateMessageId);
     }
 
     public Session getSession() {

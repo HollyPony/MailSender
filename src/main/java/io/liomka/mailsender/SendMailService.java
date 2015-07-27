@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by aagombart on 03/03/2015.
@@ -111,6 +112,10 @@ public class SendMailService {
             message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(usr.getCc().trim()));
             message.setFrom(new InternetAddress(from.trim()));
             message.setSentDate(usr.getDate());
+
+            if (usr.isUpdateMessageId()) {
+                message.setHeader("Message-id", UUID.randomUUID().toString());
+            }
 
             usr.getTransport().sendMessage(message, message.getRecipients(Message.RecipientType.TO));
             LOG.info("\tMail sent");
