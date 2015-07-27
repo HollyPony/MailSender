@@ -91,9 +91,9 @@ public class SendMailService {
         InputStream mailStream = null;
 
         try {
-            LOG.info("Sending mail");
-            LOG.info("\tPath: " + mailFile.getCanonicalPath());
-            LOG.info("\tSize: " + FileUtils.byteCountToDisplaySize(mailFile.length()));
+            LOG.info("\tSending mail");
+            LOG.info("\t\tPath: " + mailFile.getCanonicalPath());
+            LOG.info("\t\tSize: " + FileUtils.byteCountToDisplaySize(mailFile.length()));
 
             mailStream = new FileInputStream(mailFile);
 
@@ -113,9 +113,9 @@ public class SendMailService {
             message.setSentDate(usr.getDate());
 
             usr.getTransport().sendMessage(message, message.getRecipients(Message.RecipientType.TO));
-            LOG.info("Mail sent");
+            LOG.info("\tMail sent");
         } catch (Exception e) {
-            LOG.info("fail");
+            LOG.error("\tMail fail");
             e.printStackTrace();
         } finally {
             if (mailStream != null) {

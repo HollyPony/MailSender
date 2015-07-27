@@ -50,7 +50,6 @@ public class UserProperties {
         InputStream propertiesFile = null;
         try {
             propertiesFile = new FileInputStream(propertiesPath);
-            System.out.println(propertiesPath);
             properties.load(propertiesFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
